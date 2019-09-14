@@ -6,6 +6,7 @@ import resolvers from './src/resolvers';
 import app from './src/app';
 import * as socketServer from './src/socket';
 import models from './src/models';
+import { seedDummyUsers, getFirstDummyUser } from './src/seed';
 
 const apollo = new ApolloServer({
     typeDefs,
@@ -40,11 +41,15 @@ models.sequelize
         force: false, // To create table if exists , so make it false
         logging: false,
     })
-    .then(() => {
+    .then(async () => {
         apolloHttpServer.listen({ port: process.env.PORT }, () => {
             console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apollo.graphqlPath}`);
             console.log(`🚀 Subscriptions ready at ws://localhost:${process.env.PORT}${apollo.subscriptionsPath}`);
         });
+        if (await getFirstDummyUser(models)) {
+            return;
+        }
+        seedDummyUsers(models);
     })
     .catch((err) => {
         console.log(err);
@@ -52,7 +57,7 @@ models.sequelize
     });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.log('unhandledRejection error');
-    // console.log('Unhandled Rejection at:', 'reason:', reason);
+    // console.log('unhandledRejection error');
+    console.log('Unhandled Rejection at:', 'reason:', reason);
     // Application specific logging, throwing an error, or other logic here
 });
