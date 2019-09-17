@@ -39,4 +39,11 @@ const updateChatHistory = (room, chatHistory) => {
     models.ChatHistory.update({ chatHistory }, { where: { id: room } });
 };
 
-export { generateMsg, generateWelcomeMsg, createChatHistory, getChatHistory, updateChatHistory };
+const saveChatHistory = async (room, history, oldChatHistory) => {
+    if (oldChatHistory.length === 0) {
+        return createChatHistory(room, history);
+    }
+    return updateChatHistory(room, history);
+};
+
+export { generateMsg, generateWelcomeMsg, createChatHistory, getChatHistory, updateChatHistory, saveChatHistory };

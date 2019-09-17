@@ -1,12 +1,6 @@
 import jwt from 'jsonwebtoken';
 import socketIO from 'socket.io';
-import {
-    generateMsg,
-    generateWelcomeMsg,
-    getChatHistory,
-    createChatHistory,
-    updateChatHistory,
-} from './helpers/socket';
+import { generateMsg, generateWelcomeMsg, getChatHistory, saveChatHistory } from './helpers/socket';
 
 const isValid = (token) => jwt.verify(token, process.env.SECRET);
 
@@ -57,8 +51,11 @@ const initSocketServer = (httpServer) => {
 
             console.log('4: Send new msg.');
             // Send welcome message
-            socket.emit('chat_msg', generateMsg(msg, roomName));
-            // io.to(roomName).emit('chat_msg', generateMsg(msg, roomName));
+            io.to(roomName).emit('chat_msg', generateMsg(msg, roomName));
+            const oldChatHistory = await getChatHistory(roomName);
+            const { chatHistory } = oldChatHistory[0];
+            chatHistory.push(msg);
+            await saveChatHistory(roomName, chatHistory, oldChatHistory);
         });
 
         socket.on('chat_room', async (data) => {
@@ -90,7 +87,7 @@ const initSocketServer = (httpServer) => {
                 // User already in chat_room
                 if (myRooms.includes(friendId)) {
                     console.log('2: User already registered room.');
-
+                    socket.join(roomName);
                     socket.emit('chat_history', chatHistory);
                     return;
                 }
@@ -106,11 +103,9 @@ const initSocketServer = (httpServer) => {
                 return;
             }
 
-            // Send msg
+            // Add chats to user
             myRooms.push(friendId);
-            // const theRoom = { ids:[myRooms.filter((e) => e !== null)], sockets:[] }
-            // theRoom.ids =
-            usersRooms[myId] = myRooms.filter((e) => e !== null);
+            usersRooms[myId] = myRooms;
 
             socket.join(roomName);
             // Retrieve chat history
@@ -125,12 +120,8 @@ const initSocketServer = (httpServer) => {
         socket.on('leave_chat', async (chat) => {
             const friendId = chat.room.split('-')[1];
             myRooms = myRooms.filter((id) => id !== friendId);
-
             const oldChatHistory = await getChatHistory(chat.room);
-            if (oldChatHistory.length === 0) {
-                return createChatHistory(chat.room, chat.history);
-            }
-            return updateChatHistory(chat.room, chat.history);
+            saveChatHistory(chat.room, chat.history, oldChatHistory);
         });
     });
 
