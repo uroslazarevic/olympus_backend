@@ -1,8 +1,12 @@
-import jwt from 'jsonwebtoken';
 import socketIO from 'socket.io';
-import { generateMsg, generateWelcomeMsg, getChatHistory, saveChatHistory } from './helpers/socket';
-
-const isValid = (token) => jwt.verify(token, process.env.SECRET);
+import {
+    generateMsg,
+    generateWelcomeMsg,
+    getChatHistory,
+    saveChatHistory,
+    isValid,
+    validateToken,
+} from './helpers/socket';
 
 const initSocketServer = (httpServer) => {
     const io = socketIO(httpServer);
@@ -57,6 +61,16 @@ const initSocketServer = (httpServer) => {
             chatHistory.push(msg);
             await saveChatHistory(roomName, chatHistory, oldChatHistory);
         });
+        socket.on('edit_message', async (chat) => {
+            const { valid } = validateToken(chat.token, chat.room, io);
+            if (!valid) return;
+            const oldChatHistory = await getChatHistory(chat.room);
+            // Send new chat history to all sockets in room
+            const newChatHistory = [{ id: chat.room, chatHistory: chat.history }];
+            socket.broadcast.to(chat.room).emit('chat_history', newChatHistory);
+            // Save new chat history
+            await saveChatHistory(chat.room, chat.history, oldChatHistory);
+        });
 
         socket.on('chat_room', async (data) => {
             const { roomName, userData } = data;
@@ -82,6 +96,8 @@ const initSocketServer = (httpServer) => {
                 io.to(room).emit('chat_history', await getChatHistory(room));
                 return;
             }
+
+            console.log('USERS ROOM', usersRooms[myId]);
 
             if (usersRooms[myId]) {
                 // User already in chat_room

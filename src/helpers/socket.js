@@ -1,4 +1,5 @@
 import uuidv4 from 'uuid/v4';
+import jwt from 'jsonwebtoken';
 import moment from 'moment';
 import models from '../models';
 
@@ -37,6 +38,7 @@ const getChatHistory = async (room) => {
 const updateChatHistory = (room, chatHistory) => {
     // console.log(room, chatHistory);
     models.ChatHistory.update({ chatHistory }, { where: { id: room } });
+    console.log('radim?');
 };
 
 const saveChatHistory = async (room, history, oldChatHistory) => {
@@ -46,4 +48,29 @@ const saveChatHistory = async (room, history, oldChatHistory) => {
     return updateChatHistory(room, history);
 };
 
-export { generateMsg, generateWelcomeMsg, createChatHistory, getChatHistory, updateChatHistory, saveChatHistory };
+const isValid = (token) => jwt.verify(token, process.env.SECRET);
+
+const validateToken = (token, roomName, io) => {
+    const validationData = { valid: false, myId: null };
+    try {
+        const {
+            user: { id },
+        } = isValid(token);
+        validationData.myId = id;
+        validationData.valid = true;
+    } catch (err) {
+        io.to(roomName).emit('chat_room_error', 'Invalid token. Please reauthenticate.');
+    }
+    return validationData;
+};
+
+export {
+    generateMsg,
+    generateWelcomeMsg,
+    createChatHistory,
+    getChatHistory,
+    updateChatHistory,
+    saveChatHistory,
+    validateToken,
+    isValid,
+};
