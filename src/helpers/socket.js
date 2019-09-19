@@ -1,24 +1,15 @@
 import uuidv4 from 'uuid/v4';
 import jwt from 'jsonwebtoken';
-import moment from 'moment';
 import models from '../models';
 
-const now = Date.now();
-
-const generateMsg = (msg, room) => ({
-    from: msg.from,
-    text: msg.text.trim(),
-    room,
-    date: moment(now).format('h:mm a'),
-    id: uuidv4(),
-});
+const onlineUsers = [];
 
 const generateWelcomeMsg = async (friendId, room) => {
     const userFriend = await models.User.findOne({ where: { id: friendId }, raw: true });
     return {
         text: `Welcome to live chat with ${userFriend.username}!`,
         from: 'admin',
-        date: moment(now).format('h:mm a'),
+        date: Date.now(),
         id: uuidv4(),
         room,
     };
@@ -27,7 +18,7 @@ const generateWelcomeMsg = async (friendId, room) => {
 const createChatHistory = (id, chatHistory) => models.ChatHistory.create({ id, chatHistory });
 
 const getChatHistory = async (room) => {
-    const chatHistory = await models.ChatHistory.findAll({
+    const chatHistory = await models.ChatHistory.findOne({
         where: { id: room },
         attributes: ['id', 'chatHistory'],
         raw: true,
@@ -35,14 +26,11 @@ const getChatHistory = async (room) => {
     return chatHistory;
 };
 
-const updateChatHistory = (room, chatHistory) => {
-    // console.log(room, chatHistory);
-    models.ChatHistory.update({ chatHistory }, { where: { id: room } });
-    console.log('radim?');
-};
+const updateChatHistory = (room, chatHistory) => models.ChatHistory.update({ chatHistory }, { where: { id: room } });
 
-const saveChatHistory = async (room, history, oldChatHistory) => {
-    if (oldChatHistory.length === 0) {
+const saveChatHistory = async (room, history) => {
+    const oldChatHistory = await getChatHistory(room);
+    if (!oldChatHistory) {
         return createChatHistory(room, history);
     }
     return updateChatHistory(room, history);
@@ -64,8 +52,19 @@ const validateToken = (token, roomName, io) => {
     return validationData;
 };
 
+const countActiveUsers = async (userId) => {
+    const botsCount = 9;
+    const registeredUsers = await models.User.count();
+    const realUsers = registeredUsers - botsCount;
+    const found = onlineUsers.find((id) => id === userId);
+    console.log('onlineUsers', onlineUsers, userId);
+    if (!found) {
+        onlineUsers.push(userId);
+    }
+    return `${onlineUsers.length}/${realUsers}`;
+};
+
 export {
-    generateMsg,
     generateWelcomeMsg,
     createChatHistory,
     getChatHistory,
@@ -73,4 +72,5 @@ export {
     saveChatHistory,
     validateToken,
     isValid,
+    countActiveUsers,
 };

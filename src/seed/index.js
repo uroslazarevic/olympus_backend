@@ -3,6 +3,13 @@ export const seedDummyUsers = (models) => {
     const users = [
         {
             id: 1000,
+            username: 'bot0',
+            email: 'bot0@gmail.com',
+            password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
+            isAdmin: false,
+        },
+        {
+            id: 1001,
             username: 'bot1',
             email: 'bot1@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
