@@ -7,6 +7,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot0@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1001,
@@ -14,6 +17,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot1@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1002,
@@ -21,6 +27,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot2@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1003,
@@ -28,6 +37,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot3@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1004,
@@ -35,6 +47,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot4@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1005,
@@ -42,6 +57,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot5@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1006,
@@ -49,6 +67,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot6@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1007,
@@ -56,6 +77,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot7@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
         {
             id: 1008,
@@ -63,6 +87,9 @@ export const seedDummyUsers = (models) => {
             email: 'bot8@gmail.com',
             password: '$2b$12$EHR5LXO16B39.j28kTEDqOiRB8yEnnq9udugHUc2U1Akc93ws8czW',
             isAdmin: false,
+            name: '',
+            avatar: '',
+            pseudonym: '',
         },
     ];
 

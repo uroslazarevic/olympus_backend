@@ -57,6 +57,7 @@ const tryLogin = async (email, password, models) => {
             username: user.username,
             id: user.id,
         },
+        user
     };
 };
 

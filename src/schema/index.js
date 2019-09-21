@@ -1,11 +1,20 @@
 const { gql } = require('apollo-server');
 
 export default gql`
+    type File {
+        filename: String!
+        mimetype: String!
+        encoding: String!
+    }
+
     type User {
         id: Int!
         username: String!
         email: String!
         isAdmin: Boolean!
+        name: String!
+        avatar: String!
+        pseudonym: String!
         # password: String! if not defined client cant retrieve it
         createdAt: String!
         updatedAt: String!
@@ -31,7 +40,7 @@ export default gql`
 
     type Query {
         allUsers: [User!]
-        me: User
+        me(id: Int!): User!
         chatHistory(room: String!): [ChatHistory!]!
     }
 
@@ -42,6 +51,8 @@ export default gql`
         refreshTokens(token: String!, refreshToken: String!): AuthPayload!
         userInputError(input: String): String
         createChatHistory(room: String!, history: [ChatMessageInput!]!): ChatHistory!
+        profileSettings(name: String!, pseudonym: String!, id: Int!): Boolean!
+        fileUpload(file:Upload!, id:Int!):File!
     }
 
     type Subscription {
@@ -56,8 +67,8 @@ export default gql`
     type AuthPayload {
         token: String!
         refreshToken: String!
-        username: String!
         userData: AuthUserData!
+        user:User!
     }
 
     schema {

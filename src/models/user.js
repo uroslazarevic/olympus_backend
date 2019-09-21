@@ -4,6 +4,9 @@ export default (sequelize, DataTypes) => {
         email: { type: DataTypes.STRING, unique: true },
         isAdmin: { type: DataTypes.BOOLEAN, defaultValue: false },
         password: DataTypes.STRING,
+        name: { type: DataTypes.STRING, defaultValue: '' },
+        avatar: { type: DataTypes.TEXT, defaultValue: '' },
+        pseudonym: { type: DataTypes.STRING, defaultValue: '' },
     });
 
     User.associate = () => {};
