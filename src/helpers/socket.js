@@ -2,6 +2,8 @@ import uuidv4 from 'uuid/v4';
 import jwt from 'jsonwebtoken';
 import models from '../models';
 
+let chatRooms = {};
+
 const onlineUsers = [];
 
 const generateWelcomeMsg = async (friendId, myId, room) => {
@@ -81,6 +83,36 @@ const locateChatRoom = (usersRooms, roomName) => {
     return { chatRoomData: usersRooms[myId].find((r) => r.name === roomName), originId: myId };
 };
 
+const findChatByUserId = (roomName, id) => chatRooms[roomName].find((user) => user.id === id);
+
+const getChatRooms = () => chatRooms;
+
+const createChatRoom = (roomName, chatRoom) => {
+    chatRooms = { ...chatRooms, [roomName]: chatRoom };
+};
+
+const addSocketToChatUser = (roomName, id, socketId) => {
+    const chatUser = findChatByUserId(roomName, id);
+    const updChatUser = { ...chatUser, sockets: [...chatUser.sockets, socketId] };
+    const newChatUsers = [...chatRooms[roomName].filter((user) => user.id !== id), updChatUser];
+    chatRooms[roomName] = newChatUsers;
+};
+
+const deleteSocketFromChatUser = (roomName, id, socketId) => {
+    const chatUser = findChatByUserId(roomName, id);
+    const newChatUserSockets = chatUser.sockets.filter((socId) => socId !== socketId);
+    const updChatUser = { ...chatUser, sockets: newChatUserSockets };
+    const newChatUsers = [...chatRooms[roomName].filter((user) => user.id !== id), updChatUser];
+    chatRooms[roomName] = newChatUsers;
+};
+
+const saveChatUser = (roomName, chatUser) => chatRooms[roomName].push(chatUser);
+
+const deleteChatUser = (roomName, id) => {
+    const newChatUsers = chatRooms[roomName].filter((user) => user.id !== id);
+    chatRooms[roomName] = newChatUsers;
+};
+
 export {
     generateWelcomeMsg,
     createChatHistory,
@@ -90,4 +122,11 @@ export {
     isValid,
     countActiveUsers,
     locateChatRoom,
+    getChatRooms,
+    createChatRoom,
+    addSocketToChatUser,
+    deleteSocketFromChatUser,
+    findChatByUserId,
+    saveChatUser,
+    deleteChatUser,
 };
