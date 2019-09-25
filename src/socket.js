@@ -63,11 +63,16 @@ const initSocketServer = (httpServer) => {
                 io.to(msg.room).emit('send_msg', msg);
             }
             const myChatHistory = (await getChatHistory(msg.room)).chatHistory;
-            const friendChatHistory = (await getChatHistory(friendRoom)).chatHistory;
             myChatHistory.push(msg);
-            friendChatHistory.push(msg);
             await saveChatHistory(msg.room, myChatHistory);
-            await saveChatHistory(friendRoom, friendChatHistory);
+            const friendChatHistory = await getChatHistory(friendRoom);
+            if (friendChatHistory) {
+                friendChatHistory.chatHistory.push(msg);
+                await saveChatHistory(friendRoom, friendChatHistory.chatHistory);
+                return;
+            }
+            const welcomeMsg = await generateWelcomeMsg(myId, friendId, friendRoom);
+            await saveChatHistory(friendRoom, [welcomeMsg, msg]);
         });
 
         socket.on('edit_message', async (chat) => {
@@ -82,10 +87,10 @@ const initSocketServer = (httpServer) => {
                 msg.id == chat.editedMsg.id ? chat.editedMsg : msg
             );
 
-            console.log('editedFriendsCH', editedFriendsCH);
-
             // Determine room data
-            const chatRoomData = locateChatRoom(usersRooms, chat.room);
+            const { chatRoomData } = locateChatRoom(usersRooms, chat.room);
+
+            console.log('chatRoomData.sockets', chatRoomData.sockets);
 
             // Inform mine and friends connected sockets about edited message
             chatRoomData.sockets.forEach((soc) => {
@@ -110,7 +115,7 @@ const initSocketServer = (httpServer) => {
             const friendRoom = `${friendId}-${myId}`;
 
             // Determine room data
-            const chatRoomData = locateChatRoom(usersRooms, chat.room);
+            const { chatRoomData } = locateChatRoom(usersRooms, chat.room);
 
             // Update chat history of all users
             if (deleteFor === 'everyone') {

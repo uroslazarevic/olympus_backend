@@ -66,14 +66,19 @@ const countActiveUsers = async (userId) => {
 };
 
 const locateChatRoom = (usersRooms, roomName) => {
+    // Returns
+    // {
+    //  chatRoomData: {name:'1-1000', friendId:1000, sockets:[{ userId: 1, sockedId: A },{ userId: 1000, sockedId: B }]}
+    //  originId:1
+    // }
     const [myId, friendId] = roomName.split('-');
     const friendRoom = `${friendId}-${myId}`;
     if (usersRooms[friendId] && usersRooms[friendId].find((r) => r.name === friendRoom)) {
         // Friend has created chat room
-        return usersRooms[friendId].find((r) => r.name === friendRoom);
+        return { chatRoomData: usersRooms[friendId].find((r) => r.name === friendRoom), originId: friendId };
     }
     // I have created a room
-    return usersRooms[myId].find((r) => r.name === roomName);
+    return { chatRoomData: usersRooms[myId].find((r) => r.name === roomName), originId: myId };
 };
 
 export {
