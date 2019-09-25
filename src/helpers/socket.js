@@ -4,14 +4,15 @@ import models from '../models';
 
 const onlineUsers = [];
 
-const generateWelcomeMsg = async (friendId, room) => {
+const generateWelcomeMsg = async (friendId, myId, room) => {
     const userFriend = await models.User.findOne({ where: { id: friendId }, raw: true });
     return {
-        text: `Welcome to live chat with ${userFriend.username}!`,
+        text: `Welcome to live chat with ${userFriend.name}!`,
         from: 'admin',
         date: Date.now(),
         id: uuidv4(),
         room,
+        for: myId,
     };
 };
 
@@ -53,24 +54,35 @@ const validateToken = (token, roomName, io) => {
 };
 
 const countActiveUsers = async (userId) => {
-    const botsCount = 9;
+    const botsCount = 1;
     const registeredUsers = await models.User.count();
     const realUsers = registeredUsers - botsCount;
     const found = onlineUsers.find((id) => id === userId);
-    console.log('onlineUsers', onlineUsers, userId);
+    // console.log('onlineUsers', onlineUsers, userId);
     if (!found) {
         onlineUsers.push(userId);
     }
     return `${onlineUsers.length}/${realUsers}`;
 };
 
+const locateChatRoom = (usersRooms, roomName) => {
+    const [myId, friendId] = roomName.split('-');
+    const friendRoom = `${friendId}-${myId}`;
+    if (usersRooms[friendId] && usersRooms[friendId].find((r) => r.name === friendRoom)) {
+        // Friend has created chat room
+        return usersRooms[friendId].find((r) => r.name === friendRoom);
+    }
+    // I have created a room
+    return usersRooms[myId].find((r) => r.name === roomName);
+};
+
 export {
     generateWelcomeMsg,
     createChatHistory,
     getChatHistory,
-    updateChatHistory,
     saveChatHistory,
     validateToken,
     isValid,
     countActiveUsers,
+    locateChatRoom,
 };

@@ -38,5 +38,9 @@ module.exports = {
         'function-paren-newline': 'off',
         'import/prefer-default-export': 'off',
         'object-curly-newline': 'off',
+        'no-unused-expressions': 'off',
+        'arrow-body-style': 'off',
+        'no-confusing-arrow': 'off',
+        eqeqeq: 'off',
     },
 };

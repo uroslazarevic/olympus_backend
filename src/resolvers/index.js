@@ -39,14 +39,14 @@ const base64 = (file) => {
     return Buffer.from(bitmap).toString('base64');
 };
 
-const processUpload = async (file,id, models) => {
+const processUpload = async (file, id, models) => {
     const { createReadStream, filename } = await file;
     const stream = createReadStream();
     const { path } = await storeFS({ stream, filename });
     const base64Src = base64(path);
     fs.unlinkSync(path);
     await models.User.update({ avatar: base64Src }, { where: { id } });
-    return {filename};
+    return { filename };
 };
 
 export default {
@@ -54,7 +54,7 @@ export default {
         allUsers: (parent, args, { models }) => models.User.findAll(),
         chatHistory: async (parent, { room }, { models }) =>
             models.ChatHistory.findAll({ where: { id: room }, raw: true }),
-        me: (parent, {id}, { models, user }) => models.User.findOne({ where: { id } })
+        me: (parent, { id }, { models }) => models.User.findOne({ where: { id } }),
     },
     Mutation: {
         register: async (parent, args, { models }) => {
@@ -82,7 +82,7 @@ export default {
                 });
             }
         },
-        fileUpload: async (parent, {file, id}, { models }) => processUpload(file, id, models),
+        fileUpload: async (parent, { file, id }, { models }) => processUpload(file, id, models),
         profileSettings: async (parent, args, { models }) => {
             const { id, name, pseudonym } = args;
             await models.User.update({ name, pseudonym }, { where: { id } });
