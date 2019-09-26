@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-git clone https://github.com/uroslazarevic/Olympus.git olympus_backend
+git clone https://github.com/uroslazarevic/olympus_backend.git olympus_backend
 cd olympus_backend
 ```
 
