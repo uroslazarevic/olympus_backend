@@ -6,7 +6,14 @@ import {
     isValid,
     validateToken,
     countActiveUsers,
-    locateChatRoom,
+    getChatRooms,
+    createChatRoom,
+    saveChatUser,
+    deleteChatUser,
+    addSocketToChatUser,
+    deleteSocketFromChatUser,
+    findChatUserById,
+    findChatUsersByRoom,
 } from './helpers/socket';
 
 const initSocketServer = (httpServer) => {
@@ -25,16 +32,6 @@ const initSocketServer = (httpServer) => {
         return next(new Error('authentication error'));
     });
 
-    // {myId: myRooms, friendId: friendRooms}
-    const usersRooms = {};
-    /* [
-        {name:'1-1000', friendId:1000, sockets:[{ userId: 1, sockedId: A },{ userId: 1000, sockedId: B }]},
-        {name:'1-1001', friendId:1001, sockets:[{ userId: 1, sockedId: A },{ userId: 1001, sockedId: C }]}
-        ]
-     myRooms
-    */
-
-    let myRooms = [];
     io.on('connection', (socket) => {
         console.log(`CONNECTED socked with id:  ${socket.id}`);
         socket.emit('connected', 'Client side connected');
@@ -52,25 +49,30 @@ const initSocketServer = (httpServer) => {
             const { msg, token } = msgData;
             const { valid, myId } = validateToken(token, msg.room, io);
             if (!valid) return;
+
             console.log('4: Send new msg.', msg.room);
+            const chatRooms = getChatRooms();
             const friendId = msg.room.split('-')[1];
             const friendRoom = `${friendId}-${myId}`;
-            if (usersRooms[friendId] && usersRooms[friendId].find((r) => r.name === friendRoom)) {
+            if (chatRooms[friendRoom]) {
                 // Send message to friend room, where we are joined
                 io.to(friendRoom).emit('send_msg', msg);
             } else {
                 // Send message to our room, where we are joined
                 io.to(msg.room).emit('send_msg', msg);
             }
-            const myChatHistory = (await getChatHistory(msg.room)).chatHistory;
-            myChatHistory.push(msg);
-            await saveChatHistory(msg.room, myChatHistory);
-            const friendChatHistory = await getChatHistory(friendRoom);
-            if (friendChatHistory) {
-                friendChatHistory.chatHistory.push(msg);
-                await saveChatHistory(friendRoom, friendChatHistory.chatHistory);
+            const myDBChatHistory = await getChatHistory(msg.room);
+            const myNewChatHistory = [...myDBChatHistory.chatHistory, msg];
+            await saveChatHistory(msg.room, myNewChatHistory);
+
+            const frDBChatHistory = await getChatHistory(friendRoom);
+            // Friend has chat history => append new msg to his chat history
+            if (frDBChatHistory) {
+                const newFrChatHistory = [...frDBChatHistory.chatHistory, msg];
+                await saveChatHistory(friendRoom, newFrChatHistory);
                 return;
             }
+            // Friend doesnt have chat history with us => create one for him
             const welcomeMsg = await generateWelcomeMsg(myId, friendId, friendRoom);
             await saveChatHistory(friendRoom, [welcomeMsg, msg]);
         });
@@ -78,174 +80,217 @@ const initSocketServer = (httpServer) => {
         socket.on('edit_message', async (chat) => {
             const { valid } = validateToken(chat.token, chat.room, io);
             if (!valid) return;
-            const [myId, friendId] = chat.room.split('-');
+
+            const [myId, friendId] = chat.room.split('-').map((v) => parseInt(v, 10));
             const friendRoom = `${friendId}-${myId}`;
 
             // Edit friend ChatHistory
-            const frChatHistory = await getChatHistory(friendRoom);
-            const editedFriendsCH = frChatHistory.chatHistory.map((msg) =>
+            const frDBChatHistory = await getChatHistory(friendRoom);
+            const frNewChatHistory = frDBChatHistory.chatHistory.map((msg) =>
                 msg.id == chat.editedMsg.id ? chat.editedMsg : msg
             );
 
-            // Determine room data
-            const { chatRoomData } = locateChatRoom(usersRooms, chat.room);
+            // Find chat users by roomName
+            const { myChatUser, frChatUser } = findChatUsersByRoom(chat.room);
 
-            console.log('chatRoomData.sockets', chatRoomData.sockets);
+            const myNewDBChatHistory = { id: chat.room, chatHistory: chat.history };
+            const frNewDBChatHistory = { id: friendRoom, chatHistory: frNewChatHistory };
+            myChatUser.sockets.forEach((socId) => socket.to(socId).emit('chat_history', myNewDBChatHistory));
+            // Inform friend sockets about edited message, if they are joined in chat room
+            if (frChatUser) {
+                frChatUser.sockets.forEach((socId) => socket.to(socId).emit('chat_history', frNewDBChatHistory));
+            }
 
-            // Inform mine and friends connected sockets about edited message
-            chatRoomData.sockets.forEach((soc) => {
-                if (soc.userId == myId) {
-                    console.log('myId:', soc);
-                    socket.to(soc.socketId).emit('chat_history', { id: chat.room, chatHistory: chat.history });
-                } else {
-                    console.log('frId', soc);
-                    socket.to(soc.socketId).emit('chat_history', { id: friendRoom, chatHistory: editedFriendsCH });
-                }
-            });
-            // Save new chat history
-            await saveChatHistory(chat.room, chat.history);
-            await saveChatHistory(friendRoom, editedFriendsCH);
+            // Save new chat histories
+            await saveChatHistory(chat.room, myNewDBChatHistory.chatHistory);
+            await saveChatHistory(friendRoom, frNewDBChatHistory.chatHistory);
         });
 
         socket.on('delete_message', async (data) => {
             const { chat, deleteFor } = data;
             const { valid } = validateToken(chat.token, chat.room, io);
             if (!valid) return;
-            const [myId, friendId] = chat.room.split('-');
+            const [myId, friendId] = chat.room.split('-').map((v) => parseInt(v, 10));
             const friendRoom = `${friendId}-${myId}`;
 
-            // Determine room data
-            const { chatRoomData } = locateChatRoom(usersRooms, chat.room);
+            // Find chat users by roomName
+            const { myChatUser, frChatUser } = findChatUsersByRoom(chat.room);
+            // Create my new db chat history
+            const myNewDBChatHistory = { id: chat.room, chatHistory: chat.history };
 
             // Update chat history of all users
             if (deleteFor === 'everyone') {
                 // Update friends ChatHistory
-                const frChatHistory = await getChatHistory(friendRoom);
-                const updatedFriendsCH = frChatHistory.chatHistory.filter((msg) => msg.id !== chat.deletedMsg.id);
-                const updatedMyCH = chat.history.filter((msg) => msg.id !== chat.deletedMsg.id);
-                console.log('chatRoomData', chatRoomData, myId, myId);
+                const frDBChatHistory = await getChatHistory(friendRoom);
+                const frNewChatHistory = frDBChatHistory.chatHistory.filter((msg) => msg.id !== chat.deletedMsg.id);
+                const frNewDBChatHistory = { id: friendRoom, chatHistory: frNewChatHistory };
                 // Inform mine and friends connected sockets about deleted message
-                chatRoomData.sockets.forEach((soc) => {
-                    if (soc.userId == myId) {
-                        console.log('111');
-                        socket.to(soc.socketId).emit('chat_history', { id: chat.room, chatHistory: updatedMyCH });
-                    } else {
-                        console.log('222');
-                        socket.to(soc.socketId).emit('chat_history', { id: friendRoom, chatHistory: updatedFriendsCH });
-                    }
-                });
+                myChatUser.sockets.forEach((socId) => socket.to(socId).emit('chat_history', myNewDBChatHistory));
+                // Inform friend sockets about edited message, if they are joined in chat room
+                if (frChatUser) {
+                    frChatUser.sockets.forEach((socId) => socket.to(socId).emit('chat_history', frNewDBChatHistory));
+                }
 
-                // Save new chat history
-                await saveChatHistory(chat.room, chat.history);
-                await saveChatHistory(friendRoom, updatedFriendsCH);
+                // Save new chat histories
+                await saveChatHistory(chat.room, myNewDBChatHistory.chatHistory);
+                await saveChatHistory(friendRoom, frNewDBChatHistory.chatHistory);
                 return;
             }
 
-            // DELETE for me
-            chatRoomData.sockets.forEach((soc) => {
-                if (soc.userId == myId) {
-                    console.log('333');
-                    socket.to(soc.socketId).emit('chat_history', { id: chat.room, chatHistory: chat.history });
-                }
-            });
-            await saveChatHistory(chat.room, chat.history);
+            // Inform my sockets about deleted msg
+            myChatUser.sockets.forEach((socId) => socket.to(socId).emit('chat_history', myNewDBChatHistory));
+            await saveChatHistory(chat.room, myNewDBChatHistory.chatHistory);
         });
 
         socket.on('join_room', async (data) => {
+            // Get chat rooms
+            const chatRooms = getChatRooms();
+            console.log('JOIN_ROOM_START', chatRooms);
+
             const { roomName, userData } = data;
             const { valid, myId } = validateToken(userData.token, roomName, io);
             if (!valid) return;
+
             const friendId = roomName.split('-')[1];
+            const friendRoom = `${friendId}-${myId}`;
             const chatHistory = await getChatHistory(roomName);
 
-            if (usersRooms[friendId]) {
-                const roomExist = usersRooms[friendId].find((room) => room.friendId === myId.toString());
-                const friendRoom = `${friendId}-${myId}`;
-                if (roomExist) {
-                    console.log('1.1: User joins friendRoom.');
-                    socket.join(friendRoom);
-                    roomExist.sockets.push({ userId: myId, socketId: socket.id });
-                    // Update friends sockets array with my socket !
-                    usersRooms[friendId] = usersRooms[friendId].reduce((acc, room) => {
-                        room.name === friendRoom ? acc.push(roomExist) : acc.push(room);
-                        return acc;
-                    }, []);
-                    const myChatHistory = await getChatHistory(`${myId}-${friendId}`);
-                    if (myChatHistory) {
-                        console.log('1.1.1: And gets myChatHistory');
-                        socket.emit('chat_history', myChatHistory);
-                        return;
-                    }
-                    console.log('1.1.2: And gets friendChatHistory');
-                    const myRoom = `${myId}-${friendId}`;
-                    const friendChatHistory = await getChatHistory(friendRoom);
-                    const welcomeMsg = await generateWelcomeMsg(friendId, myId, myRoom);
-                    const newChatHistory = { ...friendChatHistory, id: myRoom };
-                    newChatHistory.chatHistory.unshift(welcomeMsg);
-                    // Retrieve chat history
-                    socket.emit('chat_history', newChatHistory);
-                    await saveChatHistory(myRoom, newChatHistory.chatHistory);
-                    return;
-                }
-            }
+            /**
+             * @CHAT_ROOM_EXISTS
+             * and friend has created it => roomName = `${friendId}-${myId}`
+             */
 
-            if (usersRooms[myId]) {
-                const roomExist = usersRooms[myId].find((room) => room.name === roomName);
-                // User already in join_room
-                if (roomExist) {
-                    console.log('2: User already registered room.');
-                    // We join the room with different socketId - new tab
-                    myRooms = myRooms.reduce((acc, room) => {
-                        if (room.name === roomName) {
-                            room.sockets.push({ userId: myId, socketId: socket.id });
-                        }
-                        acc.push(room);
-                        return acc;
-                    }, []);
-                    usersRooms[myId] = myRooms;
-                    socket.join(roomName);
-                    socket.emit('chat_history', chatHistory);
-                    return;
-                }
+            if (chatRooms[friendRoom]) {
+                // Join with socket in friends room
+                socket.join(friendRoom);
 
-                console.log('3: User will create a new room.');
-                myRooms.push({ name: roomName, friendId, sockets: [{ userId: myId, socketId: socket.id }] });
-                usersRooms[myId] = myRooms;
-                socket.join(roomName);
+                const chatUser = findChatUserById(friendRoom, myId);
+                if (chatUser && chatUser.sockets.length >= 1) {
+                    // Add my socket to my chatUser data in friends room
+                    addSocketToChatUser(friendRoom, myId, socket.id);
+                } else {
+                    // Add my chat user data to friends room
+                    const newChatUser = { id: myId, sockets: [socket.id] };
+                    saveChatUser(friendRoom, newChatUser);
+                }
+                // User doesn't have previous chat history
                 if (!chatHistory) {
                     // Send welcome message
                     const welcomeMsg = await generateWelcomeMsg(friendId, myId, roomName);
                     socket.emit('send_msg', await welcomeMsg);
                     await saveChatHistory(roomName, [welcomeMsg]);
+                    console.log('chatRooms', getChatRooms());
                     return;
                 }
                 socket.emit('chat_history', chatHistory);
+                console.log('chatRooms', getChatRooms());
                 return;
             }
 
-            // Add chats to user
-            myRooms.push({ name: roomName, friendId, sockets: [{ userId: myId, socketId: socket.id }] });
-            usersRooms[myId] = myRooms;
-            console.log('0: Create chat history');
+            /**
+             * @CHAT_ROOM_EXISTS
+             * and I have created it => roomName = `${myId}-${friendId}`
+             */
 
+            if (chatRooms[roomName]) {
+                socket.join(roomName);
+                const chatUser = findChatUserById(roomName, myId);
+                if (chatUser) {
+                    console.log(`2: User in chatRoom: ${roomName} => joining with new socketId: ${socket.id}`);
+                    // Add new socket to chat room user sockets array
+                    addSocketToChatUser(roomName, myId, socket.id);
+                    console.log('chatRooms', getChatRooms()[roomName]);
+                    socket.emit('chat_history', chatHistory);
+                    return;
+                }
+                console.log(`3: User with "${myId}" ID, joins the room: ${roomName}`);
+                // Add new user to chat room
+                const newChatUser = { id: myId, sockets: [socket.id] };
+                saveChatUser(roomName, newChatUser);
+                // User doesn't have previous chat history
+                if (!chatHistory) {
+                    // Send welcome message
+                    const welcomeMsg = await generateWelcomeMsg(friendId, myId, roomName);
+                    socket.emit('send_msg', await welcomeMsg);
+                    await saveChatHistory(roomName, [welcomeMsg]);
+                    console.log('chatRooms', getChatRooms());
+                    return;
+                }
+                socket.emit('chat_history', chatHistory);
+                console.log('chatRooms', getChatRooms());
+                return;
+            }
+
+            /**
+             * @CHAT_ROOM_DOESNT_EXISTS
+             * and I will create it => roomName = `${myId}-${friendId}`
+             */
+
+            console.log('0: Create chat history');
+            const newChatUser = { id: myId, sockets: [socket.id] };
+            const chatRoom = [newChatUser];
+            createChatRoom(roomName, chatRoom);
+            // Join chat room with socket
             socket.join(roomName);
-            // Retrieve chat history
+            // User doesn't have previous chat history
             if (!chatHistory) {
                 // Send welcome message
                 const welcomeMsg = await generateWelcomeMsg(friendId, myId, roomName);
                 socket.emit('send_msg', welcomeMsg);
                 await saveChatHistory(roomName, [welcomeMsg]);
+                console.log('chatRooms', getChatRooms());
                 return;
             }
+            // User has chat history
             socket.emit('chat_history', chatHistory);
+            console.log('chatRooms', getChatRooms());
         });
 
         socket.on('leave_chat', async (chat) => {
-            const [myId, friendId] = chat.room.split('-');
+            const { room: roomName, history } = chat;
+            // Socket leaves chat room
             socket.leave(chat.room);
-            myRooms = myRooms.filter((room) => room.friendId !== friendId);
-            usersRooms[myId] = myRooms;
-            await saveChatHistory(chat.room, chat.history);
+            const chatRooms = getChatRooms();
+
+            /**
+             * @I_AM_LEAVING_FROM_ROOM_CREATED_BY_ME
+             * roomName = `${myId}-${friendId}`
+             */
+
+            if (chatRooms[roomName]) {
+                const myId = roomName.split('-').map((v) => parseInt(v, 10))[0];
+                const chatUser = findChatUserById(roomName, myId);
+                // I am logged in room with multiple sockets => delete just current socket
+                if (chatUser.sockets.length > 1) {
+                    deleteSocketFromChatUser(roomName, myId, socket.id);
+                } else {
+                    // I am logged in room with just this socket => delete my chatUser data from chat room
+                    deleteChatUser(roomName, myId);
+                }
+                await saveChatHistory(chat.room, chat.history);
+                console.log('chatRooms', getChatRooms()[roomName]);
+                return;
+            }
+
+            /**
+             * @I_AM_LEAVING_FROM_ROOM_CREATED_BY_FRIEND
+             * roomName = `${myId}-${friendId}` && friendRoom = `${friendId}-${myId}`
+             * we still recieve roomName
+             */
+
+            const [myId, friendId] = roomName.split('-').map((v) => parseInt(v, 10));
+            const friendRoom = `${friendId}-${myId}`;
+
+            const chatUser = findChatUserById(friendRoom, myId);
+            // I am logged in room with multiple sockets => delete just current socket
+            if (chatUser.sockets.length > 1) {
+                deleteSocketFromChatUser(friendRoom, myId, socket.id);
+            } else {
+                // I am logged in room with just this socket => delete my chatUser data from chat room
+                deleteChatUser(friendRoom, myId);
+            }
+            await saveChatHistory(roomName, history);
+            console.log('chatRooms', getChatRooms()[friendRoom]);
         });
 
         socket.on('disconnect', async () => {
