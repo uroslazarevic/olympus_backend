@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import _ from 'lodash';
 import bcrypt from 'bcrypt';
+import { throwError } from '../helpers/throwError';
 
 const createTokens = async (user) => {
     const createToken = jwt.sign({ user: _.pick(user, ['id', 'isAdmin']) }, process.env.SECRET, { expiresIn: '20m' });
@@ -24,27 +25,39 @@ const refreshTokens = async (token, refreshToken, models) => {
     return {
         token: newToken,
         refreshToken: newRefreshToken,
-        user,
+        userData: {
+            username: user.username,
+            id: user.id,
+        },
     };
 };
 
 const tryLogin = async (email, password, models) => {
     const user = await models.User.findOne({ where: { email }, raw: true });
+
     if (!user) {
         // user with provided email not found
-        throw new Error('Invalid login');
+        return throwError("User with this email doesn't exists", 401, 'email');
     }
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
         // Bad password
-        throw new Error('Invalid login');
+        return throwError('Invalid password', 401, 'password');
     }
 
     const [token, refreshToken] = await createTokens(user);
-
+    console.log('userData', {
+        username: user.username,
+        id: user.id,
+    });
     return {
         token,
         refreshToken,
+        userData: {
+            username: user.username,
+            id: user.id,
+        },
+        user
     };
 };
 

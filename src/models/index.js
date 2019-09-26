@@ -15,8 +15,7 @@ if (config.use_env_variable) {
 
 const db = {
     User: sequelize.import('./user'),
-    Board: sequelize.import('./board'),
-    Suggestion: sequelize.import('./suggestion'),
+    ChatHistory: sequelize.import('./chatHistory.js'),
 };
 
 Object.keys(db).forEach((modelName) => {
@@ -28,4 +27,4 @@ Object.keys(db).forEach((modelName) => {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-module.exports = db;
+export default db;
