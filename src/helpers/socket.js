@@ -3,8 +3,8 @@ import jwt from 'jsonwebtoken';
 import models from '../models';
 
 let chatRooms = {};
-
 const onlineUsers = [];
+const ONLINE_ROOM = 'ONLINE_ROOM';
 
 const generateWelcomeMsg = async (friendId, myId, room) => {
     const userFriend = await models.User.findOne({ where: { id: friendId }, raw: true });
@@ -55,15 +55,47 @@ const validateToken = (token, roomName, io) => {
     return validationData;
 };
 
-const countActiveUsers = async (userId) => {
+const findUsersRegistered = () => models.User.count();
+
+const addActiveUser = async (userId, socketId) => {
     const botsCount = 1;
-    const registeredUsers = await models.User.count();
+    const registeredUsers = await findUsersRegistered();
     const realUsers = registeredUsers - botsCount;
-    const found = onlineUsers.find((id) => id === userId);
-    // console.log('onlineUsers', onlineUsers, userId);
-    if (!found) {
-        onlineUsers.push(userId);
+    const index = onlineUsers.findIndex((user) => user.userId === userId);
+    if (index === -1) {
+        const newUser = { userId, sockets: [socketId] };
+        onlineUsers.push(newUser);
+    } else {
+        // Add new socket to same user
+        onlineUsers[index].sockets.push(socketId);
     }
+    return `${onlineUsers.length}/${realUsers}`;
+};
+
+const removeActiveUser = async (socketId) => {
+    const botsCount = 1;
+    const registeredUsers = await findUsersRegistered();
+    const realUsers = registeredUsers - botsCount;
+    const index = onlineUsers.findIndex((user) => {
+        const foundSocketId = user.sockets.find((socId) => socId === socketId);
+        if (foundSocketId) {
+            return user;
+        }
+
+        return null;
+    });
+
+    const userToRemove = onlineUsers[index];
+    if (userToRemove) {
+        if (userToRemove.sockets.length > 1) {
+            const socIndexToRemove = userToRemove.sockets.findIndex((socId) => socId === socketId);
+            userToRemove.sockets.splice(socIndexToRemove, 1);
+            onlineUsers[index] = userToRemove;
+        } else {
+            onlineUsers.splice(index, 1);
+        }
+    }
+
     return `${onlineUsers.length}/${realUsers}`;
 };
 
@@ -120,7 +152,9 @@ export {
     saveChatHistory,
     validateToken,
     isValid,
-    countActiveUsers,
+    addActiveUser,
+    removeActiveUser,
+    ONLINE_ROOM,
     getChatRooms,
     createChatRoom,
     addSocketToChatUser,

@@ -15,10 +15,21 @@ export default gql`
         name: String!
         avatar: String!
         pseudonym: String!
+        city: String!
+        country: String!
         # password: String! if not defined client cant retrieve it
         createdAt: String!
         updatedAt: String!
     }
+
+    input ProfileSettingsInput {
+        id: Int!
+        name: String!
+        pseudonym: String!
+        city: String!
+        country: String!
+    }
+
     type ChatHistory {
         id: String!
         chatHistory: [ChatMessage!]!
@@ -51,8 +62,8 @@ export default gql`
         refreshTokens(token: String!, refreshToken: String!): AuthPayload!
         userInputError(input: String): String
         createChatHistory(room: String!, history: [ChatMessageInput!]!): ChatHistory!
-        profileSettings(name: String!, pseudonym: String!, id: Int!): Boolean!
-        fileUpload(file:Upload!, id:Int!):File!
+        profileSettings(settings: ProfileSettingsInput!): Boolean!
+        fileUpload(file: Upload!, id: Int!): File!
     }
 
     type Subscription {
@@ -68,7 +79,7 @@ export default gql`
         token: String!
         refreshToken: String!
         userData: AuthUserData!
-        user:User!
+        user: User!
     }
 
     schema {

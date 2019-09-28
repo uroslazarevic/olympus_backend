@@ -5,7 +5,9 @@ import {
     saveChatHistory,
     isValid,
     validateToken,
-    countActiveUsers,
+    addActiveUser,
+    removeActiveUser,
+    ONLINE_ROOM,
     getChatRooms,
     createChatRoom,
     saveChatUser,
@@ -37,12 +39,11 @@ const initSocketServer = (httpServer) => {
         socket.emit('connected', 'Client side connected');
 
         socket.on('signin', async (token) => {
-            const room = 'online-users';
-            socket.join(room);
-            const { valid, myId } = validateToken(token, room, io);
+            socket.join(ONLINE_ROOM);
+            const { valid, myId } = validateToken(token, ONLINE_ROOM, io);
             if (!valid) return;
-            const activeUsers = await countActiveUsers(myId);
-            io.to(room).emit('signin', activeUsers);
+            const activeUsers = await addActiveUser(myId, socket.id);
+            io.to(ONLINE_ROOM).emit('signin', activeUsers);
         });
 
         socket.on('send_msg', async (msgData) => {
@@ -294,8 +295,10 @@ const initSocketServer = (httpServer) => {
         });
 
         socket.on('disconnect', async () => {
-            console.log(`client ${socket.userId} :: disconnected`);
-            io.emit('check_signin');
+            console.log(`client ${socket.id} :: disconnected`);
+            socket.leave(ONLINE_ROOM);
+            const activeUsers = await removeActiveUser(socket.id);
+            io.to(ONLINE_ROOM).emit('signin', activeUsers);
         });
         socket.on('error', (data) => console.log(data));
         socket.on('reconnect_attempt', () => {

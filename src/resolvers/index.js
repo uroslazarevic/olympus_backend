@@ -59,6 +59,7 @@ export default {
     Mutation: {
         register: async (parent, args, { models }) => {
             const user = args;
+
             user.password = await bcrypt.hash(user.password, 12);
             return models.User.create(user);
         },
@@ -83,9 +84,9 @@ export default {
             }
         },
         fileUpload: async (parent, { file, id }, { models }) => processUpload(file, id, models),
-        profileSettings: async (parent, args, { models }) => {
-            const { id, name, pseudonym } = args;
-            await models.User.update({ name, pseudonym }, { where: { id } });
+        profileSettings: async (parent, { settings }, { models }) => {
+            const { id, name, pseudonym, city, country } = settings;
+            await models.User.update({ name, pseudonym, city, country }, { where: { id } });
             return true;
         },
     },
