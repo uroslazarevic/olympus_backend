@@ -1,8 +1,8 @@
 import { ApolloServer } from 'apollo-server-express';
 import { createServer } from 'http';
 
-import typeDefs from './src/schema';
-import resolvers from './src/resolvers';
+import { typeDefs } from './src/modules/typeDefs';
+import { resolvers } from './src/modules/resolvers';
 import app from './src/app';
 import * as socketServer from './src/socket';
 import models from './src/models';
