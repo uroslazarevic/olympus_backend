@@ -7,6 +7,8 @@ export default (sequelize, DataTypes) => {
         name: { type: DataTypes.STRING, defaultValue: '' },
         avatar: { type: DataTypes.TEXT, defaultValue: '' },
         pseudonym: { type: DataTypes.STRING, defaultValue: '' },
+        city: { type: DataTypes.TEXT, defaultValue: '' },
+        country: { type: DataTypes.STRING, defaultValue: '' },
     });
 
     User.associate = () => {};
