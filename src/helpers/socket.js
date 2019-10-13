@@ -1,6 +1,6 @@
 import uuidv4 from 'uuid/v4';
 import jwt from 'jsonwebtoken';
-import models from '../models';
+import models from '../db/models';
 
 let chatRooms = {};
 const onlineUsers = [];

@@ -1,6 +1,6 @@
-import path from 'path';
+const path = require('path');
 
-const envPath = path.join(__dirname, '../../', `.env.${process.env.NODE_ENV.toLocaleLowerCase()}`);
+const envPath = path.join(__dirname, '../../../', `.env.${process.env.NODE_ENV.toLowerCase()}`);
 require('dotenv').config({ path: envPath });
 
 module.exports = {

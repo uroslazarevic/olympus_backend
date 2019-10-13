@@ -5,8 +5,7 @@ import { typeDefs } from './src/modules/typeDefs';
 import { resolvers } from './src/modules/resolvers';
 import app from './src/app';
 import * as socketServer from './src/socket';
-import models from './src/models';
-import { seedDummyUsers, getFirstDummyUser } from './src/seed';
+import models from './src/db/models';
 
 const apollo = new ApolloServer({
     typeDefs,
@@ -46,10 +45,6 @@ models.sequelize
             console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apollo.graphqlPath}`);
             console.log(`🚀 Subscriptions ready at ws://localhost:${process.env.PORT}${apollo.subscriptionsPath}`);
         });
-        if (await getFirstDummyUser(models)) {
-            return;
-        }
-        seedDummyUsers(models);
     })
     .catch((err) => {
         console.log(err);

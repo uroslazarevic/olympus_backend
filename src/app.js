@@ -2,7 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
-import models from './models';
+import models from './db/models';
 
 import { refreshTokens } from './auth/auth';
 
