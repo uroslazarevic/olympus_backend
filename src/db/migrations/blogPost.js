@@ -2,7 +2,7 @@
 
 module.exports = {
     up: (queryInterface, Sequelize) => {
-        return queryInterface.createTable('Blogs', {
+        return queryInterface.createTable('BlogPosts', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
             userId: { type: Sequelize.INTEGER, allowNull: false },
             topic: { type: Sequelize.STRING, allowNull: false },
@@ -13,7 +13,7 @@ module.exports = {
     },
 
     down: (queryInterface) => {
-        return queryInterface.dropTable('Blogs');
+        return queryInterface.dropTable('BlogPosts');
     },
 };
 // Blog.belongsTo(User)

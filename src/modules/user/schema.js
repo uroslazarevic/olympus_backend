@@ -1,19 +1,30 @@
 import { gql } from 'apollo-server';
 
+import { File } from '../shared';
+
 export const userSchema = gql`
-    type User {
+    # Shared types
+    ${File}
+    # Shared types
+
+    type ProfileSettings {
         id: Int!
-        username: String!
-        email: String!
-        isAdmin: Boolean!
         name: String!
         avatar: String!
         pseudonym: String!
         city: String!
         country: String!
+    }
+
+    type User {
+        id: Int!
+        username: String!
+        email: String!
+        isAdmin: Boolean!
         # password: String! if not defined client cant retrieve it
-        createdAt: String!
-        updatedAt: String!
+        # createdAt: String!
+        # updatedAt: String!
+        profileSettings: ProfileSettings!
     }
 
     type AuthUserData {
@@ -25,12 +36,20 @@ export const userSchema = gql`
         token: String!
         refreshToken: String!
         userData: AuthUserData!
-        user: User!
+        profileSettings: ProfileSettings!
+    }
+
+    input ProfileSettingsInput {
+        id: Int!
+        name: String!
+        pseudonym: String!
+        city: String!
+        country: String!
     }
 
     extend type Query {
-        allUsers: [User!]
-        me(id: Int!): User!
+        getProfileSettings: ProfileSettings!
+        allUsers: [User!]!
     }
 
     extend type Mutation {
@@ -39,6 +58,8 @@ export const userSchema = gql`
         refreshTokens(token: String!, refreshToken: String!): AuthPayload!
         createUser(username: String!): User!
         userInputError(input: String): String
+        setProfileSettings(settings: ProfileSettingsInput!): Boolean!
+        fileUpload(file: Upload!, id: Int!): File!
     }
 
     extend type Subscription {

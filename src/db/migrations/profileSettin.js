@@ -5,11 +5,11 @@ module.exports = {
         return queryInterface.createTable('ProfileSettings', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
             userId: { type: Sequelize.INTEGER, allowNull: false },
-            name: { type: Sequelize.STRING, allowNull: false },
-            avatar: { type: Sequelize.TEXT, allowNull: false },
-            pseudonym: { type: Sequelize.STRING, allowNull: false },
-            city: { type: Sequelize.STRING, allowNull: false },
-            country: { type: Sequelize.STRING, allowNull: false },
+            name: { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+            avatar: { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+            pseudonym: { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+            city: { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+            country: { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
             createdAt: { allowNull: false, type: Sequelize.DATE },
             updatedAt: { allowNull: false, type: Sequelize.DATE },
         });

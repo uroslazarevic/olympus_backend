@@ -37,7 +37,7 @@ const processUpload = async (file, id, models) => {
     const { path } = await storeFS({ stream, filename });
     const base64Src = base64(path);
     fs.unlinkSync(path);
-    await models.User.update({ avatar: base64Src }, { where: { id } });
+    await models.ProfileSettings.update({ avatar: base64Src }, { where: { userId: id } });
     return { filename };
 };
 

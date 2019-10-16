@@ -33,7 +33,7 @@ const refreshTokens = async (token, refreshToken, models) => {
 };
 
 const tryLogin = async (email, password, models) => {
-    const user = await models.User.findOne({ where: { email }, raw: true });
+    const user = await models.User.findOne({ where: { email } });
 
     if (!user) {
         // user with provided email not found
@@ -45,11 +45,10 @@ const tryLogin = async (email, password, models) => {
         return throwError('Invalid password', 401, 'password');
     }
 
+    const profileSettings = await user.getProfileSettings();
+
     const [token, refreshToken] = await createTokens(user);
-    console.log('userData', {
-        username: user.username,
-        id: user.id,
-    });
+
     return {
         token,
         refreshToken,
@@ -57,7 +56,7 @@ const tryLogin = async (email, password, models) => {
             username: user.username,
             id: user.id,
         },
-        user
+        profileSettings,
     };
 };
 

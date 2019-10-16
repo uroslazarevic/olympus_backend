@@ -7,7 +7,7 @@ module.exports = {
                 id: 1,
                 userId: 1,
                 text: 'Energetic Meal',
-                tags: '["yummy", "light"]',
+                tags: JSON.stringify(['tag1', 'tag2']),
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },

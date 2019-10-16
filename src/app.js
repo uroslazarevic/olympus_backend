@@ -8,7 +8,7 @@ import { refreshTokens } from './auth/auth';
 
 const app = express();
 
-const addUser = async (req, res, next) => {
+const checkAuth = async (req, res, next) => {
     const token = req.headers['x-token'];
     if (token) {
         try {
@@ -31,6 +31,6 @@ const addUser = async (req, res, next) => {
 
 app.use(bodyParser.json());
 app.use(cors('*'));
-app.use(addUser);
+app.use(checkAuth);
 
 export default app;
