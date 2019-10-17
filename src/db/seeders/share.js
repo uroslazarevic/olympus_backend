@@ -2,12 +2,28 @@
 
 module.exports = {
     up: (queryInterface) => {
-        return queryInterface.bulkInsert('Shared', [
+        return queryInterface.bulkInsert('Shares', [
             {
                 id: 1,
                 sharableId: 1,
-                sharable: 'authorPost',
+                sharable: 'post',
                 userIds: '[2]',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            },
+            {
+                id: 2,
+                sharableId: 2,
+                sharable: 'post',
+                userIds: '[2]',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            },
+            {
+                id: 3,
+                sharableId: 3,
+                sharable: 'post',
+                userIds: '[]',
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
@@ -15,6 +31,6 @@ module.exports = {
     },
 
     down: (queryInterface) => {
-        return queryInterface.bulkDelete('Shared', null, {});
+        return queryInterface.bulkDelete('Shares', null, {});
     },
 };

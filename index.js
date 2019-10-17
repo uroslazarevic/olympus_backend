@@ -35,21 +35,10 @@ socketServer.initSocketServer(socketHttpServer);
 // Add subscription support
 apollo.installSubscriptionHandlers(apolloHttpServer);
 
-models.sequelize
-    .sync({
-        force: false, // To create table if exists , so make it false
-        logging: false,
-    })
-    .then(async () => {
-        apolloHttpServer.listen({ port: process.env.PORT }, () => {
-            console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apollo.graphqlPath}`);
-            console.log(`🚀 Subscriptions ready at ws://localhost:${process.env.PORT}${apollo.subscriptionsPath}`);
-        });
-    })
-    .catch((err) => {
-        console.log(err);
-        console.log('DB start error');
-    });
+apolloHttpServer.listen({ port: process.env.PORT }, () => {
+    console.log(`🚀 Server ready at http://localhost:${process.env.PORT}${apollo.graphqlPath}`);
+    console.log(`🚀 Subscriptions ready at ws://localhost:${process.env.PORT}${apollo.subscriptionsPath}`);
+});
 
 process.on('unhandledRejection', (reason, promise) => {
     // console.log('unhandledRejection error');

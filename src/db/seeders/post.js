@@ -6,7 +6,8 @@ module.exports = {
         return queryInterface.bulkInsert('Posts', [
             {
                 id: 1,
-                authorId: 1,
+                userId: 1,
+                title: 'Post title 1',
                 description: 'Post description 1',
                 type: 'video',
                 createdAt: new Date(),
@@ -14,7 +15,8 @@ module.exports = {
             },
             {
                 id: 2,
-                authorId: 1,
+                userId: 1,
+                title: 'Post title 2',
                 description: 'Post description 2',
                 type: 'image',
                 createdAt: new Date(),
@@ -22,7 +24,8 @@ module.exports = {
             },
             {
                 id: 3,
-                authorId: 1,
+                userId: 1,
+                title: 'Post title 3',
                 description: 'Post description 3',
                 type: 'text',
                 createdAt: new Date(),

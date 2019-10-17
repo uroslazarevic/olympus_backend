@@ -1,34 +1,38 @@
 export default (sequelize, DataTypes) => {
     const Post = sequelize.define('Post', {
-        authorId: { type: DataTypes.INTEGER, allowNull: false },
+        title: { type: DataTypes.STRING, allowNull: false },
         description: { type: DataTypes.STRING, allowNull: false },
         type: { type: DataTypes.STRING, allowNull: false },
     });
 
     Post.associate = (models) => {
-        Post.belongsToMany(models.User, { through: models.SharedPost });
-        Post.hasMany(models.Comment, {
+        Post.belongsTo(models.User, { foreignKey: 'userId' });
+        Post.hasOne(models.Comment, {
+            as: 'comments',
             foreignKey: 'commentableId',
             constraints: false,
             scope: {
-                commentable: 'authorPost',
+                commentable: 'post',
             },
         });
-        Post.hasMany(models.Like, {
+        Post.hasOne(models.Like, {
+            as: 'likes',
             foreignKey: 'likeableId',
             constraints: false,
             scope: {
-                likeable: 'authorPost',
+                likeable: 'post',
             },
         });
-        Post.hasMany(models.Share, {
+        Post.hasOne(models.Share, {
+            as: 'shares',
             foreignKey: 'sharableId',
             constraints: false,
             scope: {
-                sharable: 'authorPost',
+                sharable: 'post',
             },
         });
         Post.hasOne(models.Video, {
+            as: 'videoLink',
             foreignKey: 'viewableId',
             constraints: false,
             scope: {
@@ -36,6 +40,7 @@ export default (sequelize, DataTypes) => {
             },
         });
         Post.hasOne(models.Photo, {
+            as: 'imageLink',
             foreignKey: 'photoableId',
             constraints: false,
             scope: {

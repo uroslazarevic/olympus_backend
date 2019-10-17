@@ -6,8 +6,7 @@ module.exports = {
             {
                 id: 1,
                 userId: 1,
-                friendId: 2,
-                status: 'accepted',
+                friendIds: '[2]',
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },

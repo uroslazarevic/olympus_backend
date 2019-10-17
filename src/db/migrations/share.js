@@ -2,7 +2,7 @@
 
 module.exports = {
     up: (queryInterface, Sequelize) => {
-        return queryInterface.createTable('Shared', {
+        return queryInterface.createTable('Shares', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
             sharableId: { type: Sequelize.INTEGER, allowNull: false },
             // authorPost, sharedPost, userPhoto, tweetPhoto, blogPhoto, latestVideo
@@ -14,7 +14,7 @@ module.exports = {
     },
 
     down: (queryInterface) => {
-        return queryInterface.dropTable('Shared');
+        return queryInterface.dropTable('Shares');
     },
 };
 

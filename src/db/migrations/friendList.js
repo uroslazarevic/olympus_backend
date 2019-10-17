@@ -2,7 +2,7 @@
 
 module.exports = {
     up: (queryInterface, Sequelize) => {
-        return queryInterface.createTable('Friends', {
+        return queryInterface.createTable('FriendList', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
             userId: { type: Sequelize.INTEGER, allowNull: false },
             friendIds: { type: Sequelize.JSON, allowNull: false },
@@ -12,7 +12,7 @@ module.exports = {
     },
 
     down: (queryInterface) => {
-        return queryInterface.dropTable('Friends');
+        return queryInterface.dropTable('FriendList');
     },
 };
 

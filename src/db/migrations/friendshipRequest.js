@@ -5,8 +5,7 @@ module.exports = {
         return queryInterface.createTable('FriendshipRequests', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
             userId: { type: Sequelize.INTEGER, allowNull: false },
-            friendId: { type: Sequelize.STRING, allowNull: false },
-            status: { type: Sequelize.STRING, allowNull: false }, // pending,accepted
+            friendIds: { type: Sequelize.JSON, allowNull: false },
             createdAt: { allowNull: false, type: Sequelize.DATE },
             updatedAt: { allowNull: false, type: Sequelize.DATE },
         });

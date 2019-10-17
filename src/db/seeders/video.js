@@ -14,7 +14,7 @@ module.exports = {
             {
                 id: 2,
                 viewableId: 1,
-                viewable: 'authorPost',
+                viewable: 'post',
                 videoCode: 'tAGnKpE4NCI',
                 createdAt: new Date(),
                 updatedAt: new Date(),

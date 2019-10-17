@@ -2,7 +2,7 @@
 
 module.exports = {
     up: (queryInterface) => {
-        return queryInterface.bulkInsert('Friends', [
+        return queryInterface.bulkInsert('FriendList', [
             {
                 id: 1,
                 userId: 1,
@@ -14,6 +14,6 @@ module.exports = {
     },
 
     down: (queryInterface) => {
-        return queryInterface.bulkDelete('Friends', null, {});
+        return queryInterface.bulkDelete('FriendList', null, {});
     },
 };

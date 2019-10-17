@@ -1,7 +1,6 @@
 export default (sequelize, DataTypes) => {
     const FriendshipRequest = sequelize.define('FriendshipRequest', {
-        friendId: { type: DataTypes.INTEGER, allowNull: false },
-        status: { type: DataTypes.STRING, allowNull: false },
+        friendIds: { type: DataTypes.INTEGER, allowNull: false },
     });
 
     FriendshipRequest.associate = (models) => {

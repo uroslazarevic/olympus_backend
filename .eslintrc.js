@@ -42,5 +42,6 @@ module.exports = {
         'arrow-body-style': 'off',
         'no-confusing-arrow': 'off',
         eqeqeq: 'off',
+        'no-param-reassign': 'off',
     },
 };
