@@ -20,7 +20,8 @@ export const profileSchema = gql`
         userId: Int!
         text: String!
         # tags => JSON format
-        tags: String!
+        tags: JSON!
+        createdAt: String!
     }
 
     type BlogPost {
@@ -28,6 +29,7 @@ export const profileSchema = gql`
         userId: Int!
         topic: String!
         text: String!
+        createdAt: String!
     }
 
     type LatestVideo {
@@ -37,14 +39,28 @@ export const profileSchema = gql`
         videoRecord: Video!
     }
 
+    type Likes {
+        count: Int!
+        list: JSON!
+    }
+
+    type Comment {
+        commentableId: Int!
+        commentable: String!
+        list: JSON!
+        replies: Comment!
+        likes: Likes!
+    }
+
     interface Post {
         id: Int!
         title: String!
         description: String!
         type: String!
-        likes: Int!
-        comments: Int!
+        likes: Likes!
+        comments: Comment!
         shares: Int!
+        createdAt: String!
     }
 
     type VideoPost implements Post {
@@ -52,19 +68,24 @@ export const profileSchema = gql`
         title: String!
         description: String!
         type: String!
-        likes: Int!
-        comments: Int!
+        likes: Likes!
+        comments: Comment!
         shares: Int!
+        createdAt: String!
         videoLink: Video
     }
+
     type ImagePost implements Post {
         id: Int!
+        # If its shared post, it has author obj  {id, name}
+        author: ProfileSettings
         title: String!
         description: String!
         type: String!
-        likes: Int!
-        comments: Int!
+        likes: Likes!
+        comments: Comment!
         shares: Int!
+        createdAt: String!
         imageLink: Photo
     }
 
@@ -73,9 +94,10 @@ export const profileSchema = gql`
         title: String!
         description: String!
         type: String!
-        likes: Int!
-        comments: Int!
+        likes: Likes!
+        comments: Comment!
         shares: Int!
+        createdAt: String!
     }
 
     input VideoLinkInput {
@@ -94,10 +116,9 @@ export const profileSchema = gql`
         type: String!
     }
 
-    type FriendList {
-        id: Int!
-        userId: String!
-        friendIds: JSON!
+    type Friends {
+        count: Int!
+        list: [ProfileSettings!]!
     }
 
     type FriendshipRequests {
@@ -114,12 +135,14 @@ export const profileSchema = gql`
         authorPosts: [Post!]!
         sharedPosts: [Post!]!
         friendshipRequests: FriendshipRequests!
-        friendList: FriendList!
+        friends: Friends!
+        userPhotos: [Photo!]!
     }
 
     extend type Query {
-        getProfileData: ProfileData
-        getPost: Post!
+        profileData: ProfileData
+        getPost(postId: Int!): Post!
+        getSharedPosts: [Post!]!
     }
 
     extend type Mutation {
@@ -128,31 +151,11 @@ export const profileSchema = gql`
         createBlogPost(topic: String!, text: String!): BlogPost!
         createLatestVideo(title: String!, description: String!, videoCode: String!): LatestVideo!
         createPost(postData: PostData!, videoLink: VideoLinkInput, imageLink: ImageLinkInput): Post!
+        createSharedPost(postId: Int!): Post!
     }
 
     # extend type Subscription {
     # }
 `;
 
-// # type VideoPost {
-//     #     id: Int!
-//     #     userId: Int!
-//     #     description: String!
-//     #     type: String!
-//     #     videoLink: Video
-//     # }
-//     # type ImagePost {
-//     #     id: Int!
-//     #     userId: Int!
-//     #     description: String!
-//     #     type: String!
-//     #     imageLink: Photo
-//     # }
-//     # type TextPost {
-//     #     id: Int!
-//     #     userId: Int!
-//     #     description: String!
-//     #     type: String!
-//     # }
-
-//     # union Post = VideoPost | ImagePost | TextPost
+// # union Post = VideoPost | ImagePost | TextPost

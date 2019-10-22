@@ -1,4 +1,6 @@
 /* eslint-disable no-underscore-dangle */
+import { mapCommentsList } from './service';
+
 export const profileResolver = {
     Post: {
         __resolveType(obj) {
@@ -12,23 +14,81 @@ export const profileResolver = {
         profileIntro: (parent) => parent.getBioFacts(),
         twitterFeed: (parent) => parent.getTweets(),
         blogPosts: (parent) => parent.getBlogPosts(),
-        friendList: (parent) => parent.getFriendList(),
+
+        friends: async (parent, args, { models }) => {
+            const { friendIds } = await parent.getFriendList({ attributes: ['friendIds'] });
+
+            return {
+                count: friendIds.length,
+                list: models.ProfileSettings.findAll({
+                    where: { userId: friendIds },
+                    limit: 14,
+                    attributes: ['id', 'avatar'],
+                    raw: true,
+                }),
+            };
+        },
         friendshipRequests: (parent) => parent.getFriendshipRequest(),
+        userPhotos: (parent) => parent.getPhotos(),
         authorPosts: async (parent, args, { models }) => {
             const posts = await parent
                 .getPosts({
                     include: [
+                        // Get posts videoLink, imageLink, likes, shares and comments
                         { model: models.Video, as: 'videoLink' },
                         { model: models.Photo, as: 'imageLink' },
                         { model: models.Like, as: 'likes', attributes: ['userIds'] },
-                        { model: models.Comment, as: 'comments', attributes: ['userIds'] },
                         { model: models.Share, as: 'shares', attributes: ['userIds'] },
+                        {
+                            model: models.Comment,
+                            as: 'comments',
+                            attributes: ['list'],
+                            include: [
+                                // Main comment likes
+                                { model: models.Like, as: 'likes', attributes: ['userIds'] },
+                                // Main comment replies
+                                {
+                                    model: models.Comment,
+                                    as: 'replies',
+                                    attributes: ['list'],
+                                    // Main comment replies likes
+                                    include: [{ model: models.Like, as: 'likes', attributes: ['userIds'] }],
+                                },
+                            ],
+                        },
                     ],
                 })
-                .map((post) => {
-                    post.likes = post.likes.userIds.length;
-                    post.comments = post.comments.userIds.length;
+                // Remove duplicates
+                .reduce((acc, post) => {
+                    const index = acc.find((p) => p.id === post.id);
+                    if (!index) acc.push(post);
+                    return acc;
+                }, [])
+                .map(async (post) => {
+                    const { list, replies, likes } = post.comments;
+
+                    post.likes = {
+                        count: post.likes.userIds.length,
+                        list: models.ProfileSettings.findAll({
+                            where: { userId: post.likes.userIds },
+                            attributes: ['id', 'avatar', 'name'],
+                        }),
+                    };
                     post.shares = post.shares.userIds.length;
+
+                    post.comments = {
+                        list: mapCommentsList(list, models.ProfileSettings) || [],
+                        replies: {
+                            list: replies ? mapCommentsList(replies.list, models.ProfileSettings) : [],
+                            replies: [],
+                            likes: { count: replies && replies.likes ? replies.likes.userIds.length : 0, list: [] },
+                        },
+                        likes: {
+                            count: likes ? likes.userIds.length : 0,
+                            list: likes && likes.userIds.length ? likes.userIds : [],
+                        },
+                    };
+
                     return post;
                 });
             return posts;
@@ -36,7 +96,17 @@ export const profileResolver = {
     },
 
     Query: {
-        getProfileData: async (parent, args, { models, user }) => models.User.findOne({ where: { id: user.id } }),
+        profileData: (parent, args, { models, user }) => models.User.findOne({ where: { id: user.id } }),
+        getPost: async (parent, { postId }, { models, user }) => {
+            const me = await models.User.findOne({ where: { id: user.id } });
+            // Create post
+            const [post] = await me.getPosts({
+                where: { id: postId },
+                attributes: ['id', 'type', 'title', 'description'],
+                include: ['videoLink', 'imageLink'],
+            });
+            return post;
+        },
     },
     Mutation: {
         createBioFact: (parent, args, { models, user }) => models.BioFact.create({ ...args, userId: user.id }),
@@ -59,44 +129,51 @@ export const profileResolver = {
             // Create post
             const post = await me.createPost(postData, { raw: true });
             // Create posts's likes, comments and shares
-            const likes = await post.createLikes({ userIds: [] });
-            const comments = await post.createComments({ userIds: [] });
-            const shares = await post.createShares({ userIds: [] });
+            post.createLikes({ userIds: [] });
+            post.createComments({ userIds: [] });
+            post.createShares({ list: [] });
+
             if (postData.type === 'video') link = await post.createVideoLink(videoLink);
             if (postData.type === 'image') link = await post.createImageLink(imageLink);
             return {
                 ...post.dataValues,
                 [`${postData.type}Link`]: link,
-                shares: shares.userIds.length,
-                likes: likes.userIds.length,
-                comments: comments.userIds.length,
+                shares: 0,
+                likes: 0,
+                comments: [],
+            };
+        },
+
+        createSharedPost: async (parent, { postId }, { models, user }) => {
+            const me = await models.User.findOne({ where: { id: user.id } });
+            // Get Post
+            const [post] = await me.getPosts({
+                where: { id: postId },
+                attributes: ['type', 'title', 'description'],
+                include: [
+                    { model: models.Video, as: 'videoLink', attributes: ['videoCode'] },
+                    { model: models.Photo, as: 'imageLink', attributes: ['base64'] },
+                ],
+            });
+            // Create shared post with authorId
+            const sharedPost = await me.createSharedPost({ ...post.dataValues, authorId: postId });
+            // Create posts videoLink or imageLink, depending of the post type
+            if (post.type === 'video') sharedPost.createVideoLink(post.videoLink.dataValues);
+            if (post.type === 'image') sharedPost.createImageLink(post.imageLink.dataValues);
+            // Create posts's likes, comments and shares
+            sharedPost.createLikes({ userIds: [] });
+            sharedPost.createComments({ userIds: [] });
+            sharedPost.createShares({ userIds: [] });
+            return {
+                ...sharedPost.dataValues,
+                [`${post.type}Link`]: post.videoLink ? post.videoLink : post.imageLink,
+                shares: 0,
+                likes: 0,
+                comments: 0,
             };
         },
     },
 };
-
-// {
-//     getProfileData {
-//       posts  {
-//         id
-//         type
-// likes
-//     shares
-//     comments
-//         __typename
-//         ...on VideoPost {
-//           id, videoLink {
-//             videoCode
-//           }
-//         }
-//         ...on ImagePost {
-//           id, imageLink {
-//             id
-//           }
-//         }
-//       }
-//     }
-//   }
 
 // Count specific attribute - works only for hasMany association, I cant count JSON attribute
 // const [post] = await me.getPosts({

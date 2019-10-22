@@ -9,21 +9,24 @@ export default (sequelize, DataTypes) => {
 
     SharedPost.associate = (models) => {
         SharedPost.belongsTo(models.User, { foreignKey: 'userId' });
-        SharedPost.hasMany(models.Comment, {
+        SharedPost.hasOne(models.Comment, {
+            as: 'comments',
             foreignKey: 'commentableId',
             constraints: false,
             scope: {
                 commentable: 'sharedPost',
             },
         });
-        SharedPost.hasMany(models.Like, {
+        SharedPost.hasOne(models.Like, {
+            as: 'likes',
             foreignKey: 'likeableId',
             constraints: false,
             scope: {
                 likeable: 'sharedPost',
             },
         });
-        SharedPost.hasMany(models.Share, {
+        SharedPost.hasOne(models.Share, {
+            as: 'shares',
             foreignKey: 'sharableId',
             constraints: false,
             scope: {

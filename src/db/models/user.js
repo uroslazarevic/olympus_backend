@@ -20,6 +20,7 @@ export default (sequelize, DataTypes) => {
         User.hasMany(models.Tweet, { foreignKey: 'userId' });
         User.hasMany(models.LatestVideo, { foreignKey: 'userId' });
         User.hasMany(models.Post, { foreignKey: 'userId' });
+        User.hasMany(models.SharedPost, { foreignKey: 'userId' });
         User.hasMany(models.Photo, {
             foreignKey: 'photoableId',
             constraints: false,

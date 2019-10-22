@@ -7,7 +7,7 @@ module.exports = {
             commentableId: { type: Sequelize.INTEGER, allowNull: false },
             // authorPost, sharedPost, userPhoto, tweetPhoto, blogPhoto, latestVideo
             commentable: { type: Sequelize.STRING, allowNull: false },
-            userIds: { type: Sequelize.JSON, allowNull: false },
+            list: { type: Sequelize.JSON, allowNull: false }, // "['{userId, comment}']""
             createdAt: { allowNull: false, type: Sequelize.DATE },
             updatedAt: { allowNull: false, type: Sequelize.DATE },
         });

@@ -10,7 +10,7 @@ export default (sequelize, DataTypes) => {
         },
         {
             name: {
-                singular: 'ProfileSettings',
+                singular: 'profileSettings',
             },
         }
     );

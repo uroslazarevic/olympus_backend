@@ -4,6 +4,7 @@ module.exports = {
     up: (queryInterface, Sequelize) => {
         return queryInterface.createTable('SharedPosts', {
             id: { allowNull: false, autoIncrement: true, primaryKey: true, type: Sequelize.INTEGER },
+            userId: { allowNull: false, type: Sequelize.INTEGER },
             authorId: { type: Sequelize.INTEGER, allowNull: false },
             title: { type: Sequelize.STRING, allowNull: false },
             description: { type: Sequelize.STRING, allowNull: false },
