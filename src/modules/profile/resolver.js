@@ -14,7 +14,6 @@ export const profileResolver = {
         profileIntro: (parent) => parent.getBioFacts(),
         twitterFeed: (parent) => parent.getTweets(),
         blogPosts: (parent) => parent.getBlogPosts(),
-
         friends: async (parent, args, { models }) => {
             const { friendIds } = await parent.getFriendList({ attributes: ['friendIds'] });
 
@@ -109,10 +108,16 @@ export const profileResolver = {
         },
     },
     Mutation: {
-        createBioFact: (parent, args, { models, user }) => models.BioFact.create({ ...args, userId: user.id }),
-        createTweet: (parent, args, { models, user }) => models.Tweet.create({ ...args, userId: user.id }),
-        createBlogPost: (parent, args, { models, user }) => models.BlogPost.create({ ...args, userId: user.id }),
-        createLatestVideo: async (parent, args, { models, user }) => {
+        // Bio fact resolvers
+        createBioFact: (_, args, { models, user }) => models.BioFact.create({ ...args, userId: user.id }),
+        deleteBioFacts: async (_, { ids }, { models }) =>
+            (await models.BioFact.destroy({ where: { id: ids } })) && true,
+        updateBioFact: async (_, args, { models, user }) =>
+            (await models.BioFact.update(args, { where: { id: args.id } })) && { ...args, userId: user.id },
+        // Tweet resolvers
+        createTweet: (_, args, { models, user }) => models.Tweet.create({ ...args, userId: user.id }),
+        createBlogPost: (_, args, { models, user }) => models.BlogPost.create({ ...args, userId: user.id }),
+        createLatestVideo: async (_, args, { models, user }) => {
             const { title, description, videoCode } = args;
             const me = await models.User.findOne({ where: { id: user.id } });
             const latestVideo = await me.createLatestVideo({ title, description });

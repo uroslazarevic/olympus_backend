@@ -7,7 +7,7 @@ const onlineUsers = [];
 const ONLINE_ROOM = 'ONLINE_ROOM';
 
 const generateWelcomeMsg = async (friendId, myId, room) => {
-    const userFriend = await models.User.findOne({ where: { id: friendId }, raw: true });
+    const userFriend = await models.ProfileSettings.findOne({ where: { userId: friendId }, raw: true });
     return {
         text: `Welcome to live chat with ${userFriend.name}!`,
         from: 'admin',
@@ -26,6 +26,7 @@ const getChatHistory = async (room) => {
         attributes: ['id', 'chatHistory'],
         raw: true,
     });
+    console.log('chatHistory', chatHistory);
     return chatHistory;
 };
 

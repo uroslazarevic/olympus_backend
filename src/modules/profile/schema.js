@@ -146,10 +146,17 @@ export const profileSchema = gql`
     }
 
     extend type Mutation {
+        # Bio Facts Mutations
         createBioFact(topic: String!, content: String!): BioFact!
+        deleteBioFacts(ids: [Int!]!): Boolean!
+        updateBioFact(id: ID!, topic: String!, content: String!): BioFact!
+        # Tweet Mutations
         createTweet(text: String!, tags: String!): Tweet!
+        # BlogPost Mutations
         createBlogPost(topic: String!, text: String!): BlogPost!
+        # LatestVideo Mutations
         createLatestVideo(title: String!, description: String!, videoCode: String!): LatestVideo!
+        # Post Mutations
         createPost(postData: PostData!, videoLink: VideoLinkInput, imageLink: ImageLinkInput): Post!
         createSharedPost(postId: Int!): Post!
     }
